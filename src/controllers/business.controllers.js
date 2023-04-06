@@ -1,5 +1,6 @@
-const puppeteer = require('puppeteer');
-const { Business } = require('../models/business.model')
+const puppeteer = require('puppeteer')
+const logger = require('../utils/logger')
+const { Business, validate } = require('../models/business.model')
 
 const scrapeBusiness = async (url) => {
     const browser = await puppeteer.launch();
@@ -19,25 +20,28 @@ const scrapeBusiness = async (url) => {
 }
 
 const createBusiness = async (req, res) => {
+    const { error } = validate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+  
     const { url } = req.body;
-
+  
     try {
-        const businessData = await scrapeBusiness(url);
-        const business = new Business(businessData);
-        await business.save();
-        res.send('Business saved successfully');
+      const businessData = await scrapeBusiness(url);
+      const business = new Business(businessData);
+      await business.save();
+      res.send('Business saved successfully');
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error saving business');
+      logger.error(error);
+      res.status(500).send('Error saving business')
     }
-}
-
+  }
+  
 const getAllBusinesses = async (req, res) => {
     try {
         const businesses = await Business.find({});
         res.send(businesses);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send('Error retrieving businesses');
     }
 }
